@@ -1,0 +1,13 @@
+@extends('layouts.app')
+@section('title','Create Order')
+
+@section('content')
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <a href="{{ route('orders.index') }}">← Back</a>
+    <h1 class="text-2xl font-bold mt-2 mb-4">Create Order</h1>
+
+    <form action="{{ route('orders.store') }}" method="post">
+      @include('orders._form')
+    </form>
+  </div>
+@endsection
