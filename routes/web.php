@@ -14,8 +14,17 @@ Route::get('/pages/{slug}', function (string $slug) {
     return view('page', compact('slug'));
 })->name('pages.show');
 Route::get('/quote', QuoteController::class)->name('quote');
-Route::resource('products', ProductController::class)
-    ->names('products');
+
+Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+Route::get('/products/trashed', [ProductController::class, 'trashed'])->name('products.trashed');
+Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+Route::get('/products/{product}', [ProductController::class, 'show'])->whereNumber('product')->name('products.show');
+Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->whereNumber('product')->name('products.edit');
+Route::patch('/products/{product}', [ProductController::class, 'update'])->whereNumber('product')->name('products.update');
+Route::delete('/products/{product}', [ProductController::class, 'destroy'])->whereNumber('product')->name('products.destroy');
+Route::post('/products/{id}/restore', [ProductController::class, 'restore'])->whereNumber('id')->name('products.restore');
+Route::delete('/products/{id}/force', [ProductController::class, 'forceDestroy'])->whereNumber('id')->name('products.force-destroy');
 
 Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->whereNumber('order')->name('orders.show');
@@ -35,7 +44,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/orders/{order}', [OrderController::class, 'update'])->whereNumber('order')->name('orders.update');
     Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->whereNumber('order')->name('orders.destroy');
 
-    // ゴミ箱・復元・完全削除
     Route::get('/orders/trashed', [OrderController::class, 'trashed'])->name('orders.trashed');
     Route::post('/orders/{id}/restore', [OrderController::class, 'restore'])->whereNumber('id')->name('orders.restore');
     Route::delete('/orders/{id}/force', [OrderController::class, 'forceDestroy'])->whereNumber('id')->name('orders.force-destroy');

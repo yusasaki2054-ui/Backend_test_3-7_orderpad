@@ -19,6 +19,15 @@ class ProductController extends Controller
         return view('products.index', compact('products'));
     }
 
+    public function trashed()
+    {
+        $products = Product::onlyTrashed()
+            ->orderByDesc('deleted_at')
+            ->paginate(12);
+
+        return view('products.trashed', compact('products'));
+    }
+
     public function show(Product $product)
     {
         return view('products.show', compact('product'));
@@ -72,13 +81,35 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        if ($product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
-        }
         $product->delete();
 
         return redirect()
             ->route('products.index')
-            ->with('success', '商品を削除しました。');
+            ->with('success', '商品をゴミ箱に移動しました。');
+    }
+
+    public function restore(int $id)
+    {
+        $product = Product::onlyTrashed()->findOrFail($id);
+        $product->restore();
+
+        return redirect()
+            ->route('products.trashed')
+            ->with('success', '商品を復元しました。');
+    }
+
+    public function forceDestroy(int $id)
+    {
+        $product = Product::onlyTrashed()->findOrFail($id);
+
+        if ($product->image_path) {
+            Storage::disk('public')->delete($product->image_path);
+        }
+
+        $product->forceDelete();
+
+        return redirect()
+            ->route('products.trashed')
+            ->with('success', '商品を完全に削除しました。');
     }
 }
