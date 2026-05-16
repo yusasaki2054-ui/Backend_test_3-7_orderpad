@@ -25,6 +25,13 @@ class OrderPolicy
         return $user->id === $order->user_id;
     }
 
-    public function restore(User $user, Order $order): bool { return false; }
-    public function forceDelete(User $user, Order $order): bool { return false; }
+    public function restore(User $user, Order $order): bool
+    {
+        return $user->id === $order->user_id;
+    }
+
+    public function forceDelete(User $user, Order $order): bool
+    {
+        return $user->id === $order->user_id;
+    }
 }

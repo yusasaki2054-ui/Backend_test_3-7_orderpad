@@ -6,19 +6,53 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
+use App\Http\Requests\SearchOrderRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function index()
+    public function index(SearchOrderRequest $request)
     {
-        $orders = Order::query()
+        $query = Order::query()
             ->with(['user','items'])
-            ->orderByDesc('order_date')->orderByDesc('id')
-            ->paginate(15)->withQueryString();
+            ->when($request->user_name, fn($q) =>
+                $q->whereHas('user', fn($qq) =>
+                    $qq->where('name', 'like', '%'.$request->user_name.'%')
+                )
+            )
+            ->when($request->date_from, fn($q) =>
+                $q->where('order_date', '>=', $request->date_from)
+            )
+            ->when($request->date_to, fn($q) =>
+                $q->where('order_date', '<=', $request->date_to)
+            )
+            ->orderByDesc('order_date')->orderByDesc('id');
+
+        $orders = $query->paginate(15)->withQueryString();
+
+        if ($request->filled('min_total') || $request->filled('max_total')) {
+            $orders->setCollection(
+                $orders->getCollection()->filter(function ($order) use ($request) {
+                    $total = $order->computed_total;
+                    if ($request->filled('min_total') && $total < $request->min_total) return false;
+                    if ($request->filled('max_total') && $total > $request->max_total) return false;
+                    return true;
+                })
+            );
+        }
 
         return view('orders.index', compact('orders'));
+    }
+
+    public function trashed()
+    {
+        $orders = Order::onlyTrashed()
+            ->with(['user','items'])
+            ->orderByDesc('deleted_at')
+            ->paginate(15);
+
+        return view('orders.trashed', compact('orders'));
     }
 
     public function show(Order $order)
@@ -105,6 +139,26 @@ class OrderController extends Controller
         $order->delete();
 
         return redirect()->route('orders.index')
-            ->with('success','注文を削除しました。');
+            ->with('success','注文をゴミ箱に移動しました。');
+    }
+
+    public function restore(int $id)
+    {
+        $order = Order::onlyTrashed()->findOrFail($id);
+        $this->authorize('restore', $order);
+        $order->restore();
+
+        return redirect()->route('orders.trashed')
+            ->with('success','注文を復元しました。');
+    }
+
+    public function forceDestroy(int $id)
+    {
+        $order = Order::onlyTrashed()->findOrFail($id);
+        $this->authorize('forceDelete', $order);
+        $order->forceDelete();
+
+        return redirect()->route('orders.trashed')
+            ->with('success','注文を完全に削除しました。');
     }
 }

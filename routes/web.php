@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\QuoteController;
@@ -33,6 +34,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->whereNumber('order')->name('orders.edit');
     Route::patch('/orders/{order}', [OrderController::class, 'update'])->whereNumber('order')->name('orders.update');
     Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->whereNumber('order')->name('orders.destroy');
+
+    // ゴミ箱・復元・完全削除
+    Route::get('/orders/trashed', [OrderController::class, 'trashed'])->name('orders.trashed');
+    Route::post('/orders/{id}/restore', [OrderController::class, 'restore'])->whereNumber('id')->name('orders.restore');
+    Route::delete('/orders/{id}/force', [OrderController::class, 'forceDestroy'])->whereNumber('id')->name('orders.force-destroy');
 });
 
 require __DIR__.'/auth.php';
